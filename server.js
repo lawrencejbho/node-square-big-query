@@ -1,6 +1,5 @@
 require("dotenv").config();
 const { Client, Environment, ApiError } = require("square");
-const { testData } = require("./data.js");
 const pool = require("./db.js");
 const { BigQuery } = require("@google-cloud/bigquery");
 const fs = require("fs");
@@ -15,7 +14,6 @@ const { locationsApi, customersApi, teamApi, ordersApi, paymentsApi } = client;
 async function getLocation() {
   try {
     const response = await client.locationsApi.listLocations();
-
     console.log(response.result);
   } catch (error) {
     console.log(error);
@@ -35,9 +33,7 @@ async function listCustomers() {
 
 async function searchTeamMembers() {
   try {
-    const response = await client.teamApi.searchTeamMembers({
-      limit: 200,
-    });
+    const response = await client.teamApi.searchTeamMembers({});
     // const databaseData = await readTeam();
 
     // let update = compareData(response.result.teamMembers, databaseData);
@@ -48,23 +44,14 @@ async function searchTeamMembers() {
     // );
 
     // console.log(update);
-    fs.writeFileSync(
-      process.env.LOCAL_FILE_DIRECTORY + "team_members.json",
-      JSON.stringify(response.result.teamMembers),
-      function (err) {
-        if (err) {
-          return console.log(err);
-        }
-        console.log("The file was saved!");
-      }
-    );
+
+    writeToLocalFile("team_members.json", response.result.teamMembers);
+
     // const updateBigQuery = await updateBigQuery();
   } catch (error) {
     console.log(error);
   }
 }
-
-searchTeamMembers();
 
 async function listCustomers() {
   let cursor = "";
@@ -111,57 +98,37 @@ async function listCustomers() {
   }
 }
 
+// go through each object's property and check for bigInt, array, or object
+// array needs to be checked like this because an array is an object in js
+// anytime there is an object, recursively go through each of the object's properties
 async function searchOrders() {
-  // go through each object's property and check for bigInt, array, or object
-  // array needs to be checked like this because an array is an object in js
-  // anytime there is an object, recursively go through each of the object's properties
-
   let cursor = "";
   let final_array = [];
 
   try {
+    // the cursor can't be blank for the first request
     let response = await client.ordersApi.searchOrders({
-      locationIds: [process.env.LOCATION_ID],
+      locationIds: [process.env.SQUARE_LOCATION_ID],
     });
 
-    let cursor = response.result.cursor;
-    let count = 0;
     convertBigIntToInt(response.result.orders);
-    // console.log([response.result.orders[0]]);
     final_array = [...response.result.orders];
+    cursor = response.result.cursor;
 
     while (cursor != undefined) {
-      response = await client.ordersApi.searchOrders({
-        locationIds: [process.env.LOCATION_ID],
+      let response = await client.ordersApi.searchOrders({
+        locationIds: [process.env.SQUARE_LOCATION_ID],
         cursor: cursor,
       });
+      // const bigquery = await loadData(response.result.orders, "orders");
       convertBigIntToInt(response.result.orders);
-
-      // const bigquery = await loadData(response.result.customers, "customers");
       final_array = [...final_array, ...response.result.orders];
-      // console.log(response.result.customers);
       cursor = response.result.cursor;
-      count++;
-
-      // console.log(count);
       console.log(final_array.length);
     }
   } catch {}
 
-  try {
-    fs.writeFileSync(
-      process.env.LOCAL_FILE_DIRECTORY + "orders.json",
-      JSON.stringify(final_array),
-      function (err) {
-        if (err) {
-          return console.log(err);
-        }
-        console.log("The file was saved!");
-      }
-    );
-  } catch (err) {
-    console.log(err.message);
-  }
+  // writeToLocalFile("orders.json", final_array);
 }
 
 async function listPayments() {
@@ -170,16 +137,10 @@ async function listPayments() {
 
   try {
     let response = await client.paymentsApi.listPayments();
-    // console.log(response.result.customers);
-    // response.result.customers.forEach((entry) => {
-    //   entry.version = Number(entry.version);
-    // });
-    let cursor = response.result.cursor;
-    let count = 0;
     convertBigIntToInt(response.result.payments);
-    console.log(cursor);
-    // console.log(response.result.payments);
     final_array = [...response.result.payments];
+    cursor = response.result.cursor;
+
     while (cursor != undefined) {
       response = await client.paymentsApi.listPayments(
         undefined,
@@ -187,37 +148,16 @@ async function listPayments() {
         undefined,
         cursor
       );
-      // response.result.customers.forEach((entry) => {
-      //   entry.version = Number(entry.version);
-      // });
-      // const bigquery = await loadData(response.result.customers, "customers");
+
+      // const bigquery = await loadData(response.result.payments, "payments");
       convertBigIntToInt(response.result.payments);
-
       final_array = [...final_array, ...response.result.payments];
-      // console.log(response.result.customers);
       cursor = response.result.cursor;
-      count++;
-
-      // console.log(count);
-      console.log(cursor);
-      console.log(final_array.length);
+      // console.log(final_array.length);
     }
   } catch {}
 
-  try {
-    fs.writeFileSync(
-      process.env.LOCAL_FILE_DIRECTORY + "payments.json",
-      JSON.stringify(final_array),
-      function (err) {
-        if (err) {
-          return console.log(err);
-        }
-        console.log("The file was saved!");
-      }
-    );
-  } catch (err) {
-    console.log(err.message);
-  }
+  // writeToLocalFile("payments.json", final_array)
 }
 
 // build a map from the databaseData then check if the map has each entry from the squareData, if not matching record then push to update array
@@ -304,17 +244,6 @@ async function readCustomers() {
     const query = await pool.query("SELECT * FROM customers");
     const result = query.rows[0].entrys;
 
-    fs.writeFileSync(
-      process.env.LOCAL_FILE_DIRECTORY + "customers2.json",
-      result,
-      function (err) {
-        if (err) {
-          return console.log(err);
-        }
-        console.log("The file was saved!");
-      }
-    );
-
     console.log(result.length);
     return result;
   } catch (err) {
@@ -373,6 +302,7 @@ function convertBigIntToInt(response) {
   response.forEach((entry) => {
     recrusiveFunction(entry);
   });
+
   function recrusiveFunction(entry) {
     for (let [key, value] of Object.entries(entry)) {
       if (typeof value === "bigint") {
@@ -395,5 +325,22 @@ function convertBigIntToInt(response) {
       // console.log("array value " + value);
       recrusiveFunction(value);
     });
+  }
+}
+
+async function writeToLocalFile(filename, result) {
+  try {
+    fs.writeFileSync(
+      process.env.LOCAL_FILE_DIRECTORY + filename,
+      JSON.stringify(result),
+      function (err) {
+        if (err) {
+          return console.log(err);
+        }
+        console.log("The file was saved!");
+      }
+    );
+  } catch (err) {
+    console.log(err.message);
   }
 }
