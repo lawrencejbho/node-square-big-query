@@ -10,30 +10,34 @@ const client = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
 });
 
-const { customersApi, teamApi, ordersApi, paymentsApi } = client;
+const { customersApi, teamApi, ordersApi, paymentsApi, catalogApi } = client;
 
 exports.main = async (data, context) => {
+  try {
+    await updateTeamMembers();
+  } catch (error) {
+    console.log(error);
+  }
+  try {
+    await updateCatalog();
+  } catch (error) {
+    console.log(error);
+  }
+  try {
+    await updateOrders();
+  } catch (error) {
+    console.log(error);
+  }
   // try {
-  //   await updateTeamMembers();
+  //   await updateCustomers();
   // } catch (error) {
   //   console.log(error);
   // }
   // try {
-  //   await updateOrders();
+  //   await updatePayments();
   // } catch (error) {
   //   console.log(error);
   // }
-  try {
-    await updateCustomers();
-  } catch (error) {
-    console.log(error);
-  }
-
-  try {
-    await updatePayments();
-  } catch (error) {
-    console.log(error);
-  }
 };
 
 async function updateTeamMembers() {
@@ -60,6 +64,28 @@ async function updateTeamMembers() {
     console.log(error);
   }
 }
+
+async function updateCatalog() {
+  try {
+    const bigQueryData = await queryData("catalog");
+    console.log("Previous Big Query length " + bigQueryData.length);
+    const squareData = await client.catalogApi.searchCatalogItems({});
+    console.log("New length from Square " + squareData.result.items.length);
+    convertBigIntToInt(squareData.result.items);
+
+    let update = compareData(squareData.result.items, bigQueryData);
+    console.log(update.length);
+    if (update.length > 0) {
+      const bigquery = await loadData(squareData.result.items, "catalog");
+    }
+    // use if you need to generate the json file to load into bigQuery
+    // writeToLocalFile("catalog.json", squareData.result.items);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+updateCatalog();
 
 async function updateCustomers() {
   let cursor = "";
