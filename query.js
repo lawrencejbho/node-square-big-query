@@ -1,10 +1,13 @@
 "use strict";
-const path = require("path");
-require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+// const path = require("path");
+// require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+
+require("dotenv").config();
 
 function queryData(dataset) {
   // [START bigquery_create_table]
   // Import the Google Cloud client library and create a client
+
   const { BigQuery } = require("@google-cloud/bigquery");
   const bigqueryClient = new BigQuery({
     keyFilename: process.env.BIGQUERY_KEYFILE_PATH,

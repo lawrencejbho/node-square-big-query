@@ -3,7 +3,7 @@ const { Client, Environment, ApiError } = require("square");
 const { BigQuery } = require("@google-cloud/bigquery");
 const fs = require("fs");
 
-const { queryData } = require("./bigquery/query.js");
+const { queryData } = require("./query.js");
 
 const client = new Client({
   environment: Environment.Production,
@@ -12,16 +12,44 @@ const client = new Client({
 
 const { customersApi, teamApi, ordersApi, paymentsApi } = client;
 
-async function searchTeamMembers() {
+exports.main = async (data, context) => {
+  // try {
+  //   await updateTeamMembers();
+  // } catch (error) {
+  //   console.log(error);
+  // }
+  // try {
+  //   await updateOrders();
+  // } catch (error) {
+  //   console.log(error);
+  // }
+  try {
+    await updateCustomers();
+  } catch (error) {
+    console.log(error);
+  }
+
+  try {
+    await updatePayments();
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+async function updateTeamMembers() {
   try {
     const bigQueryData = await queryData("team-members");
-    const response = await client.teamApi.searchTeamMembers({});
+    console.log("Previous Big Query length " + bigQueryData.length);
+    const squareData = await client.teamApi.searchTeamMembers({});
+    console.log(
+      "New length from Square " + squareData.result.teamMembers.length
+    );
 
-    let update = compareData(response.result.teamMembers, bigQueryData);
-    // console.log(update);
+    let update = compareData(squareData.result.teamMembers, bigQueryData);
+    console.log(update.length);
     if (update.length > 0) {
       const bigquery = await loadData(
-        response.result.teamMembers,
+        squareData.result.teamMembers,
         "team-members"
       );
     }
@@ -52,13 +80,14 @@ async function updateCustomers() {
       });
       final_array = [...final_array, ...response.result.customers];
       cursor = response.result.cursor;
-      console.log(cursor);
-      console.log(final_array.length);
+      // console.log(cursor);
+      // console.log(final_array.length);
     }
     return final_array;
   }
 
   try {
+    console.log("working on updating customers");
     const bigQueryData = await queryData("customers");
     console.log("Previous Big Query length " + bigQueryData.length);
     const squareData = await listCustomers();
@@ -115,12 +144,13 @@ async function updateOrders() {
       }
       cursor = response.result.cursor;
 
-      console.log(final_array.length);
+      // console.log(final_array.length);
     }
     return final_array;
   }
 
   try {
+    console.log("working on updating orders");
     const bigQueryData = await queryData("orders");
     console.log("Previous Big Query length " + bigQueryData.length);
     const squareData = await searchOrders();
@@ -164,12 +194,13 @@ async function updatePayments() {
         final_array = [...final_array, ...response.result.payments];
       }
       cursor = response.result.cursor;
-      console.log(final_array.length);
+      // console.log(final_array.length);
     }
     return final_array;
   }
 
   try {
+    console.log("working on updating payments");
     const bigQueryData = await queryData("payments");
     console.log("Previous Big Query length " + bigQueryData.length);
     const squareData = await listPayments();
@@ -189,8 +220,6 @@ async function updatePayments() {
     console.log(error.message);
   }
 }
-
-updatePayments();
 
 // build a map from the databaseData then check if the map has each entry from the squareData, if not matching record then push to update array
 function compareData(squareData, bigQueryData, skip) {
