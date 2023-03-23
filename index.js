@@ -73,7 +73,7 @@ async function updateCatalog() {
     console.log("New length from Square " + squareData.result.items.length);
     convertBigIntToInt(squareData.result.items);
 
-    let update = compareData(squareData.result.items, bigQueryData);
+    let update = compareData(squareData.result.items, bigQueryData, {});
     console.log(update.length);
     if (update.length > 0) {
       const bigquery = await loadData(squareData.result.items, "catalog");
@@ -84,8 +84,6 @@ async function updateCatalog() {
     console.log(error);
   }
 }
-
-updateCatalog();
 
 async function updateCustomers() {
   let cursor = "";
@@ -269,11 +267,11 @@ function compareData(squareData, bigQueryData, skip) {
 }
 
 async function loadData(dataSet, tableId) {
-  const datasetId = "my_states_dataset3";
+  const datasetId = process.env.BIGQUERY_DATASET_ID;
 
   const bigqueryClient = new BigQuery({
     keyFilename: process.env.BIGQUERY_KEYFILE_PATH,
-    projectId: process.env.SQUARE_PROJECT_ID,
+    projectId: process.env.BIGQUERY_PROJECT_ID,
   });
 
   const options = {

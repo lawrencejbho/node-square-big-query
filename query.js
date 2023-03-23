@@ -11,14 +11,15 @@ function queryData(dataset) {
   const { BigQuery } = require("@google-cloud/bigquery");
   const bigqueryClient = new BigQuery({
     keyFilename: process.env.BIGQUERY_KEYFILE_PATH,
-    projectId: process.env.SQUARE_PROJECT_ID,
+    projectId: process.env.BIGQUERY_PROJECT_ID,
   });
 
   async function query() {
     try {
       const datasetId = process.env.BIGQUERY_DATASET_ID;
 
-      const query = `SELECT *FROM \`square-big-query.my_states_dataset3.${dataset}\`;`;
+      // const query = `SELECT *FROM \`square-big-query.my_states_dataset3.${dataset}\`;`;
+      const query = `SELECT *FROM \`trade-routes-363205.square_sales.${dataset}\`;`;
 
       const options = {
         query: query,
