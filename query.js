@@ -18,8 +18,8 @@ function queryData(dataset) {
     try {
       const datasetId = process.env.BIGQUERY_DATASET_ID;
 
-      // const query = `SELECT *FROM \`square-big-query.my_states_dataset3.${dataset}\`;`;
-      const query = `SELECT *FROM \`trade-routes-363205.square_sales.${dataset}\`;`;
+      const query = `SELECT *FROM \`square-big-query.my_states_dataset3.${dataset}\`;`;
+      // const query = `SELECT *FROM \`trade-routes-363205.square_sales.${dataset}\`;`;
 
       const options = {
         query: query,
