@@ -12,8 +12,8 @@ function main() {
 
     // Create a client
     const bigqueryClient = new BigQuery({
-      keyFilename: "./square-big-query-3917c272476a.json",
-      projectId: "square-big-query",
+      keyFilename: process.env.BIGQUERY_KEYFILE_PATH,
+      projectId: process.env.SQUARE_PROJECT_ID,
     });
 
     // The SQL query to run

@@ -13,32 +13,34 @@ const client = new Client({
 const { customersApi, teamApi, ordersApi, paymentsApi, catalogApi } = client;
 
 exports.main = async (data, context) => {
-  try {
-    await updateTeamMembers();
-  } catch (error) {
-    console.log(error);
-  }
-  try {
-    await updateCatalog();
-  } catch (error) {
-    console.log(error);
-  }
-  try {
-    await updateOrders();
-  } catch (error) {
-    console.log(error);
-  }
   // try {
-  //   await updateCustomers();
+  //   await updateTeamMembers();
   // } catch (error) {
   //   console.log(error);
   // }
   // try {
-  //   await updatePayments();
+  //   await updateCatalog();
   // } catch (error) {
   //   console.log(error);
   // }
+  // try {
+  //   await updateOrders();
+  // } catch (error) {
+  //   console.log(error);
+  // }
+  try {
+    await updateCustomers();
+  } catch (error) {
+    console.log(error);
+  }
+  try {
+    await updatePayments();
+  } catch (error) {
+    console.log(error);
+  }
 };
+
+updateTeamMembers();
 
 async function updateTeamMembers() {
   try {
